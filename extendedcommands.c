@@ -1127,7 +1127,7 @@ static void choose_default_backup_format() {
             ui_print("Default backup format set to dedupe.\n");
             break;
         case 2:
-            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tgz"); BSydz
+            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tgz"); // BSydz
             ui_print("Default backup format set to tar + gzip.\n");
             break;
     }
@@ -1221,7 +1221,7 @@ void show_nandroid_menu()
                             "Advanced Restore",
                             "Free Unused Old Data",
                             "Default Backup Format",
-                            "Default TGZ Compression", //BSydz
+                            "Default TGZ Compression", // BSydz
                             NULL,
                             NULL,
                             NULL,
