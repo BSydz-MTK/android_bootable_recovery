@@ -99,7 +99,7 @@ int maybe_install_firmware_update(const char *send_intent) {
     char *busy_image = ui_copy_image(
         BACKGROUND_ICON_FIRMWARE_INSTALLING, &width, &height, &bpp);
     char *fail_image = ui_copy_image(
-        BACKGROUND_ICON_FIRMWARE_ERROR, &width, &height, &bpp);
+        BACKGROUND_ICON_ERROR, &width, &height, &bpp);
 
     ui_print("Writing %s image...\n", update_type);
     if (write_update_for_bootloader(
