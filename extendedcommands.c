@@ -1066,25 +1066,35 @@ static void run_dedupe_gc(const char* other_sd) {
         nandroid_dedupe_gc(tmp);
     }
 }
-
+// BSydz Adapted from Philz Advanced Recovery
 static void choose_default_backup_format() {
     static char* headers[] = {  "Default Backup Format",
                                 "",
                                 NULL
     };
 
+    int fmt = nandroid_get_default_backup_format();
+
     char **list;
     char* list_tar_default[] = { "tar (default)",
         "dup",
+        "tar + gzip",
         NULL
     };
     char* list_dup_default[] = { "tar",
         "dup (default)",
+        "tar + gzip",
         NULL
     };
-
-    if (nandroid_get_default_backup_format() == NANDROID_BACKUP_FORMAT_DUP) {
+    char* list_tgz_default[] = { "tar",
+        "dup",
+        "tar + gzip (default)",
+        NULL
+    };
+    if (fmt == NANDROID_BACKUP_FORMAT_DUP) {
         list = list_dup_default;
+    } else if (fmt == NANDROID_BACKUP_FORMAT_TGZ) {
+        list = list_tgz_default;
     } else {
         list = list_tar_default;
     }
@@ -1099,6 +1109,85 @@ static void choose_default_backup_format() {
             write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
             ui_print("Default backup format set to dedupe.\n");
             break;
+        case 2:
+            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tgz"); BSydz
+            ui_print("Default backup format set to tar + gzip.\n");
+            break;
+    }
+}
+
+// BSydz Adapted from Philz Advanced Recovery
+static void choose_default_backup_compression() {
+    static char* headers[] = {  "Default TGZ Compression"
+                                "",
+                                NULL
+    };
+
+    int fmt = nandroid_get_default_backup_format();
+    int value = nandroid_get_default_tgz_compression();
+
+    char **list;
+    char* list_low_default[] = { "Low (default)",
+        "Med",
+        "High",
+        "Fast",
+        NULL
+    };
+    char* list_medium_default[] = { "Low",
+        "Med (default)",
+        "High",
+        "Fast",
+        NULL
+    };
+    char* list_high_default[] = { "Low",
+        "Med",
+        "High (default)",
+        "Fast",
+        NULL
+    };
+    char* list_fast_default[] = { "Low",
+        "Med",
+        "High",
+        "Fast (default)",
+        NULL
+    };
+    if (fmt == NANDROID_BACKUP_FORMAT_TGZ) {
+        if (value == TAR_GZ_LOW) {
+                list = list_low_default;
+        } else if (value == TAR_GZ_MEDIUM) {
+                list = list_medium_default;
+        } else if (value == TAR_GZ_HIGH) {
+                list = list_high_default;
+        } else if (value == TAR_GZ_FAST) {
+                list = list_fast_default;
+        }
+    }
+        if (fmt != NANDROID_BACKUP_FORMAT_TGZ) {
+            ui_print("First set backup format to tar.gz\n");
+        } else {
+    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    switch (chosen_item) {
+        case 0:
+            compression_value = TAR_GZ_LOW;
+            write_string_to_file(NANDROID_TGZ_COMPRESSION_FILE, "low");
+            ui_print("Default backup format set to low.\n");
+            break;
+        case 1:
+            compression_value = TAR_GZ_MEDIUM;
+            write_string_to_file(NANDROID_TGZ_COMPRESSION_FILE, "medium");
+            ui_print("Default backup format set to medium.\n");
+            break;
+        case 2:
+            compression_value = TAR_GZ_HIGH;
+            write_string_to_file(NANDROID_TGZ_COMPRESSION_FILE, "high");
+            ui_print("Default backup format set to high.\n");
+            break;
+        case 3:
+            compression_value = TAR_GZ_FAST;
+	        write_string_to_file(NANDROID_TGZ_COMPRESSION_FILE, "fast");
+            ui_print("Default backup format set to fast.\n");
+            break;
+		}	
     }
 }
 
@@ -1109,13 +1198,13 @@ void show_nandroid_menu()
                                 NULL
     };
 
-    char* list[] = { "backup",
-                            "restore",
-                            "delete",
-                            "advanced restore",
-                            "free unused backup data",
-                            "choose default backup format",
-                            NULL,
+    char* list[] = { "Backup",
+                            "Restore",
+                            "Delete",
+                            "Advanced Restore",
+                            "Free Unused Old Data",
+                            "Default Backup Format",
+                            "Default TGZ Compression", //BSydz
                             NULL,
                             NULL,
                             NULL,
@@ -1127,20 +1216,20 @@ void show_nandroid_menu()
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc";
-        list[6] = "backup to internal sdcard";
-        list[7] = "restore from internal sdcard";
-        list[8] = "advanced restore from internal sdcard";
-        list[9] = "delete from internal sdcard";
+        list[7] = "backup to internal sdcard";
+        list[8] = "restore from internal sdcard";
+        list[9] = "advanced restore from internal sdcard";
+        list[10] = "delete from internal sdcard";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd";
-        list[6] = "backup to external sdcard";
-        list[7] = "restore from external sdcard";
-        list[8] = "advanced restore from external sdcard";
-        list[9] = "delete from external sdcard";
+        list[7] = "backup to external sdcard";
+        list[8] = "restore from external sdcard";
+        list[9] = "advanced restore from external sdcard";
+        list[10] = "delete from external sdcard";
     }
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
-    extend_nandroid_menu(list, 10, sizeof(list) / sizeof(char*));
+    extend_nandroid_menu(list, 11, sizeof(list) / sizeof(char*));
 #endif
 
     for (;;) {
@@ -1187,6 +1276,9 @@ void show_nandroid_menu()
                 choose_default_backup_format();
                 break;
             case 6:
+                choose_default_backup_compression(); // BSydz
+                break;
+            case 7:
                 {
                     char backup_path[PATH_MAX];
                     time_t t = time(NULL);
@@ -1218,24 +1310,24 @@ void show_nandroid_menu()
                     nandroid_backup(backup_path);
                 }
                 break;
-            case 7:
+            case 8:
                 if (other_sd != NULL) {
                     show_nandroid_restore_menu(other_sd);
                 }
                 break;
-            case 8:
+            case 9:
                 if (other_sd != NULL) {
                     show_nandroid_advanced_restore_menu(other_sd);
                 }
                 break;
-            case 9:
+            case 10:
                 if (other_sd != NULL) {
                     show_nandroid_delete_menu(other_sd);
                 }
                 break;
             default:
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
-                handle_nandroid_menu(10, chosen_item);
+                handle_nandroid_menu(11, chosen_item);
 #endif
                 break;
         }
