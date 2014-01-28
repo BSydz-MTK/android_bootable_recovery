@@ -199,6 +199,12 @@ int try_mount(const char* device, const char* mount_point, const char* fs_type, 
     return ret;
 }
 
+int use_migrated_storage() {
+    struct stat s;
+    return lstat("/data/media/0", &s) == 0 &&
+            lstat("/data/media/.cwm_force_data_media", &s) != 0;
+}
+
 int is_data_media() {
     int i;
     for (i = 0; i < num_volumes; i++) {
@@ -214,9 +220,16 @@ void setup_data_media() {
     for (i = 0; i < num_volumes; i++) {
         Volume* vol = device_volumes + i;
         if (strcmp(vol->fs_type, "datamedia") == 0) {
+            // support /data/media/0
+            char path[15];
+            if (use_migrated_storage())
+                sprintf(path, "/data/media/0");
+            else sprintf(path, "/data/media");
+
+            LOGI("using %s for %s\n", path, vol->mount_point);
             rmdir(vol->mount_point);
-            mkdir("/data/media", 0755);
-            symlink("/data/media", vol->mount_point);
+            mkdir(path, 0755);
+            symlink(path, vol->mount_point);
             return;
         }
     }
@@ -224,6 +237,9 @@ void setup_data_media() {
 
 int is_data_media_volume_path(const char* path) {
     Volume* v = volume_for_path(path);
+    // prevent segfault on bad call
+    if (v == NULL || v->fs_type == NULL)
+        return 0;
     return strcmp(v->fs_type, "datamedia") == 0;
 }
 
@@ -239,7 +255,7 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
     }
     if (is_data_media_volume_path(path)) {
         if (ui_should_log_stdout()) {
-            LOGI("using /data/media for %s.\n", path);
+            LOGI("using /data/media(/0) for %s.\n", path);
         }
         int ret;
         if (0 != (ret = ensure_path_mounted("/data")))

@@ -88,8 +88,15 @@ void write_string_to_file(const char* filename, const char* string) {
 }
 
 void write_recovery_version() {
-    if ( is_data_media() ) {
-        write_string_to_file("/sdcard/0/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
+    struct stat st;
+    ensure_path_mounted("/data");
+    if (is_data_media()) {
+        if (0 == lstat("/data/media/0", &st))
+            write_string_to_file("/data/media/0/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
+    } else {
+        if (volume_for_path("/emmc") != NULL)
+            write_string_to_file("/emmc/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
+        else write_string_to_file("/sdcard/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
     }
     write_string_to_file("/sdcard/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
 }
@@ -148,6 +155,11 @@ void show_install_update_menu()
         other_sd = "/external_sd/";
         install_menu_items[4] = "Choose zip from External sdcard";
     }
+	else if (volume_for_path("/internal_sd") != NULL) {
+        other_sd = "/internal_sd/";
+        install_menu_items[4] = "Choose zip from Internal sdcard";
+    }
+
     
     for (;;)
     {
@@ -580,7 +592,8 @@ void show_mount_usb_storage_menu()
     Volume* volumes[MAX_NUM_USB_VOLUMES] = {
         volume_for_path("/sdcard"),
         volume_for_path("/emmc"),
-        volume_for_path("/external_sd")
+        volume_for_path("/external_sd"),
+        volume_for_path("/internal_sd")
     };
 
     // Enable USB storage
@@ -924,7 +937,8 @@ void show_partition_menu()
         }
         else {
           options[mountable_volumes + formatable_volumes] = "format /data and /data/media (/sdcard)";
-          options[mountable_volumes + formatable_volumes + 1] = NULL;
+          options[mountable_volumes + formatable_volumes + 1] = "mount USB storage";
+          options[mountable_volumes + formatable_volumes + 2] = NULL;
         }
 
         int chosen_item = get_menu_selection(headers, &options, 0, 0);
@@ -945,6 +959,9 @@ void show_partition_menu()
                     ui_print("Done.\n");
                 ignore_data_media_workaround(0);
             }
+        }
+        else if (is_data_media() && chosen_item == (mountable_volumes+formatable_volumes+1)) {
+            show_mount_usb_storage_menu();
         }
         else if (chosen_item < mountable_volumes) {
             MountMenuEntry* e = &mount_menu[chosen_item];
@@ -1228,6 +1245,13 @@ void show_nandroid_menu()
         list[9] = "advanced restore from external sdcard";
         list[10] = "delete from external sdcard";
     }
+    else if (volume_for_path("/internal_sd") != NULL) {
+        other_sd = "/internal_sd";
+        list[7] = "Backup to internal_sd";
+        list[8] = "Restore from internal_sd";
+        list[9] = "advanced restore from internal sdcard";
+        list[10] = "Delete from internal_sd";
+    }
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
     extend_nandroid_menu(list, 11, sizeof(list) / sizeof(char*));
 #endif
@@ -1448,6 +1472,9 @@ void show_advanced_menu()
     if (!can_partition("/emmc")) {
         list[9] = NULL;
     }
+    if (!can_partition("/internal_sd")) {
+        list[9] = NULL;
+    }
 
     for (;;)
     {
@@ -1522,6 +1549,9 @@ void show_advanced_menu()
             case 9:
                 partition_sdcard("/emmc");
                 break;
+            case 10:
+                partition_sdcard("/internal_sd");
+                break;
         }
     }
 }
@@ -1566,6 +1596,7 @@ void create_fstab()
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
     write_fstab_root("/external_sd", file);
+    write_fstab_root("/internal_sd", file);
     fclose(file);
     LOGI("Completed outputting fstab.\n");
 }
