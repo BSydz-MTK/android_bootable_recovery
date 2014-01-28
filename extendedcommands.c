@@ -132,10 +132,10 @@ void show_install_update_menu()
                                 NULL
     };
     
-    char* install_menu_items[] = {  "choose zip from sdcard",
-                                    "install zip from sideload",
-                                    "apply /sdcard/update.zip",
-                                    "toggle signature verification",
+    char* install_menu_items[] = {  "Choose zip Sdcard",
+                                    "Install zip from sideload",
+                                    "Apply /sdcard/update.zip",
+                                    "Toggle Signature Verification",
                                     NULL,
                                     NULL };
 
@@ -146,7 +146,7 @@ void show_install_update_menu()
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd/";
-        install_menu_items[4] = "choose zip from external sdcard";
+        install_menu_items[4] = "Choose zip from External sdcard";
     }
     
     for (;;)
@@ -722,7 +722,7 @@ int format_device(const char *device, const char *path, const char *fs_type) {
         reset_ext4fs_info();
         int result = make_ext4fs(device, length, v->mount_point, sehandle);
         if (result != 0) {
-            LOGE("format_volume: make_extf4fs failed on %s\n", device);
+            LOGE("format_volume: make_ext4fs failed on %s\n", device);
             return -1;
         }
         return 0;
@@ -1420,16 +1420,16 @@ void show_advanced_menu()
                                 NULL
     };
 
-    static char* list[] = { "reboot recovery",
-                            "reboot to bootloader",
-                            "power off",
-                            "wipe dalvik cache",
-                            "report error",
-                            "key test",
-                            "show log",
-                            "partition sdcard",
-                            "partition external sdcard",
-                            "partition internal sdcard",
+    static char* list[] = { "Reboot Recovery",
+                            "Reboot to Bootloader",
+                            "Power off",
+                            "Wipe dalvik cache",
+                            "Report error",
+                            "Key test",
+                            "Show log",
+                            "Partition sdcard",
+                            "Partition external_sd",
+                            "Partition internal_sd",
                             NULL
     };
 
