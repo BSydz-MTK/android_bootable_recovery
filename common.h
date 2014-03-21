@@ -132,7 +132,7 @@ typedef struct {
 
     const char* fs_options2;
 
-    const char* lun;          // (/sdcard, /emmc, /external_sd /internal_sd only) LUN file to
+    const char* lun;          // (/sdcard, /emmc, /external_sd only) LUN file to
                               // use when mounting via USB mass storage
 } Volume;
 
@@ -160,11 +160,5 @@ FILE* fopen_path(const char *path, const char *mode);
 
 int ui_get_selected_item();
 int ui_is_showing_back_button();
-
-#define EMMC 1
-#define EXTERNALSD 2
-#define INTERNALSD 3
-
-extern int OTHER_SD_CARD;
 
 #endif  // RECOVERY_COMMON_H
